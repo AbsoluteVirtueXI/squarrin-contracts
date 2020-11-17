@@ -5,14 +5,15 @@ const Squarrin = contract.fromArtifact('Squarrin');
 const Quadreum = contract.fromArtifact('Quadreum');
 
 describe('Quadreum', () => {
-  const [dev, owner, registryFunder, addr1, addr2] = accounts;
+  const [dev, owner, registryFunder, addr1, addr2, admin] = accounts;
+  const PERCENTAGE = 5;
   const TOTAL_SUPPLY = new BN('8' + '0'.repeat(27));
   const NAME = 'Quadreum';
   const SYMBOL = 'QUAD';
 
   context('Quadreum without only 1 default operator', function () {
     beforeEach(async function () {
-      this.squarrin = await Squarrin.new(5, { from: dev });
+      this.squarrin = await Squarrin.new(admin, PERCENTAGE, { from: dev });
       this.erc1820 = await singletons.ERC1820Registry(registryFunder);
     });
 
@@ -30,7 +31,7 @@ describe('Quadreum', () => {
 
   context('Quadreum with a successful deployment', function () {
     beforeEach(async function () {
-      this.squarrin = await Squarrin.new(5, { from: dev });
+      this.squarrin = await Squarrin.new(admin, PERCENTAGE, { from: dev });
       this.erc1820 = await singletons.ERC1820Registry(registryFunder);
       this.defaultOperators = [this.squarrin.address];
       this.quadreum = await Quadreum.new(owner, this.defaultOperators, { from: dev });
