@@ -1,5 +1,5 @@
 const Squarrin = artifacts.require('Squarrin');
 
-module.exports = async function (deployer) {
-  await deployer.deploy(Squarrin, 5);
+module.exports = async function (deployer, network, accounts) {
+  await deployer.deploy(Squarrin, accounts[0], 5);
 };

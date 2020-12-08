@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.0;
+pragma solidity >=0.7.0 <0.8.0;
 import "@openzeppelin/contracts/token/ERC777/ERC777.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Squarrin.sol";
@@ -15,7 +15,6 @@ contract Quadreum is ERC777, Ownable {
     }
 
     constructor(address owner_, address[] memory defaultOperators)
-        public
         onlyOneDefaultOperator(defaultOperators)
         ERC777(_NAME, _SYMBOL, defaultOperators)
     {

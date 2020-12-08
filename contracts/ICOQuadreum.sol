@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.0;
+pragma solidity >=0.7.0 <0.8.0;
 import "./Quadreum.sol";
 
 contract ICOQuad {
@@ -20,7 +20,7 @@ contract ICOQuad {
         uint256 price, // price pour 1 CALK
         address payable seller,
         address quadreumAddress
-    ) public {
+    ) {
         _price = price;
         _seller = seller;
         token = Quadreum(quadreumAddress);

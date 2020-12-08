@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.0;
+pragma solidity >=0.7.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 import "./Quadreum.sol";
 
+// TODO use library Increment and safemath
 contract Squarrin {
     struct User {
         bool isContentCreator;
@@ -28,7 +29,7 @@ contract Squarrin {
     }
 
     Quadreum private _quadreum;
-    uint256 private _lastProductId;
+    uint256 private _lastProductId; // should be Increment ?
     uint8 private _rewardPercentage;
     uint256 private _minFollowingTimeForReward;
     mapping(address => User) private _users;
@@ -66,7 +67,7 @@ contract Squarrin {
     }
 
     // TESTED
-    constructor(address admin, uint8 percentage) public onlyValidPercentage(percentage) {
+    constructor(address admin, uint8 percentage) onlyValidPercentage(percentage) {
         _minFollowingTimeForReward = 4 weeks;
         _lastProductId = 0;
         _rewardPercentage = percentage; //need a _setPercentage and modifier 0 <= X <= 100
@@ -114,7 +115,12 @@ contract Squarrin {
         onlyForUnregisteredUser(addr)
         returns (bool)
     {
-        _users[addr] = User({isContentCreator: isContentCreator, nbFollowers: 0, nbFollowees: 0, createdAt: now});
+        _users[addr] = User({
+            isContentCreator: isContentCreator,
+            nbFollowers: 0,
+            nbFollowees: 0,
+            createdAt: block.timestamp
+        });
         return true;
     }
 
@@ -138,7 +144,7 @@ contract Squarrin {
         require(!_followers[follower][followee].isFollowing, "Squarrin: Only follow unfollowed user");
         _users[followee].nbFollowers += 1;
         _users[follower].nbFollowees += 1;
-        _followers[follower][followee] = FollowStatus(true, now);
+        _followers[follower][followee] = FollowStatus(true, block.timestamp);
     }
 
     // TESTED
@@ -182,7 +188,7 @@ contract Squarrin {
         if (!isFinite) {
             quantity = type(uint256).max;
         }
-        Product memory product = Product(productType, seller, price, quantity, urlHash, true, now);
+        Product memory product = Product(productType, seller, price, quantity, urlHash, true, block.timestamp);
         _lastProductId += 1;
         _products[_lastProductId] = product;
         return true;
@@ -190,6 +196,7 @@ contract Squarrin {
 
     function stopSell(uint256 productId) public onlyAdmin onlyForActiveSell(productId) returns (bool) {
         _products[productId].isActive = false;
+        return true;
     }
 
     function product(uint256 productId) public view returns (Product memory) {

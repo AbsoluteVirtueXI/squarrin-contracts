@@ -59,6 +59,14 @@ module.exports = {
       timeoutBlocks: 200,
       skipDryRun: true,
     },
+    kovan: {
+      provider: () => new HDWalletProvider(mnemonic, `https://kovan.infura.io/v3/${projectId}`),
+      network_id: 42,
+      gas: 5500000,
+      confirmations: 0,
+      timeoutBlocks: 200,
+      skipDryRun: true,
+    },
     // Another network with more advanced options...
     // advanced: {
     // port: 8777,             // Custom port
