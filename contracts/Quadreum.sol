@@ -4,6 +4,7 @@ import "@openzeppelin/contracts/token/ERC777/ERC777.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Squarrin.sol";
 
+// TODO add pausable, Accesscontrol and context ?
 contract Quadreum is ERC777, Ownable {
     uint256 private constant _TOTAL_SUPPLY = 8 * 10**27;
     string private constant _NAME = "Quadreum";

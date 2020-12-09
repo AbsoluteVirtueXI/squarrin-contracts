@@ -8,7 +8,7 @@ contract Squarrin {
     struct User {
         bool isContentCreator;
         uint256 nbFollowers;
-        uint256 nbFollowees;
+        uint256 nbFollowings;
         uint256 createdAt;
     }
 
@@ -29,7 +29,7 @@ contract Squarrin {
     }
 
     Quadreum private _quadreum;
-    uint256 private _lastProductId; // should be Increment ?
+    uint256 private _lastProductId; // TODO: should be Increment ?
     uint8 private _rewardPercentage;
     uint256 private _minFollowingTimeForReward;
     mapping(address => User) private _users;
@@ -118,7 +118,7 @@ contract Squarrin {
         _users[addr] = User({
             isContentCreator: isContentCreator,
             nbFollowers: 0,
-            nbFollowees: 0,
+            nbFollowings: 0,
             createdAt: block.timestamp
         });
         return true;
@@ -135,34 +135,34 @@ contract Squarrin {
     }
 
     // TESTED
-    function follow(address follower, address followee)
+    function follow(address follower, address following)
         public
         onlyAdmin
         onlyForRegisteredUser(follower)
-        onlyForRegisteredUser(followee)
+        onlyForRegisteredUser(following)
     {
-        require(!_followers[follower][followee].isFollowing, "Squarrin: Only follow unfollowed user");
-        _users[followee].nbFollowers += 1;
-        _users[follower].nbFollowees += 1;
-        _followers[follower][followee] = FollowStatus(true, block.timestamp);
+        require(!_followers[follower][following].isFollowing, "Squarrin: Only follow unfollowed user");
+        _users[following].nbFollowers += 1;
+        _users[follower].nbFollowings += 1;
+        _followers[follower][following] = FollowStatus(true, block.timestamp);
     }
 
     // TESTED
-    function isFollowing(address follower, address followee) public view returns (FollowStatus memory) {
-        return _followers[follower][followee];
+    function isFollowing(address follower, address following) public view returns (FollowStatus memory) {
+        return _followers[follower][following];
     }
 
     // TESTED
-    function unfollow(address follower, address followee)
+    function unfollow(address follower, address following)
         public
         onlyAdmin
         onlyForRegisteredUser(follower)
-        onlyForRegisteredUser(followee)
+        onlyForRegisteredUser(following)
     {
-        require(_followers[follower][followee].isFollowing, "Squarrin: Only unfollow followee");
-        _users[followee].nbFollowers -= 1;
-        _users[follower].nbFollowees -= 1;
-        _followers[follower][followee] = FollowStatus(false, 0);
+        require(_followers[follower][following].isFollowing, "Squarrin: Only unfollow following");
+        _users[following].nbFollowers -= 1;
+        _users[follower].nbFollowings -= 1;
+        _followers[follower][following] = FollowStatus(false, 0);
     }
 
     /*
@@ -225,14 +225,14 @@ contract Squarrin {
 
 
 
-    function getReward(address followee) public view returns (uint256) {
-        return token.rewardBy(followee) / users[followee].nbFollowers;
+    function getReward(address following) public view returns (uint256) {
+        return token.rewardBy(following) / users[following].nbFollowers;
     }
 
-    function withdrawReward(address followee) public returns (bool) {
+    function withdrawReward(address following) public returns (bool) {
         // TODO rewardTransferFrom instead of transferFrom
-        require(users[msg.sender].followees[followee], "Squarrin: Only followers can get reward");
-        token.rewardTransferFrom(followee, msg.sender, token.rewardBy(followee) / users[followee].nbFollowers);
+        require(users[msg.sender].followings[following], "Squarrin: Only followers can get reward");
+        token.rewardTransferFrom(following, msg.sender, token.rewardBy(following) / users[following].nbFollowers);
         return true;
     }
 

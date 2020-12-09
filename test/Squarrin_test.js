@@ -15,7 +15,7 @@ const _isSameUser = (user1, user2) => {
   return (
     user1.isContentCreator === user2.isContentCreator &&
     new BN(user1.nbFollowers).eq(user2.nbFollowers) &&
-    new BN(user1.nbFollowees).eq(user2.nbFollowees) &&
+    new BN(user1.nbFollowings).eq(user2.nbFollowings) &&
     new BN(user1.createdAt).eq(user2.createdAt)
   );
 };
@@ -109,7 +109,7 @@ describe('Squarrin', function () {
           _isSameUser(_user1, {
             isContentCreator: true,
             nbFollowers: new BN(0),
-            nbFollowees: new BN(0),
+            nbFollowings: new BN(0),
             createdAt: _t1,
           }),
           'registered user1 do not have expected informations',
@@ -121,7 +121,7 @@ describe('Squarrin', function () {
           _isSameUser(_user2, {
             isContentCreator: false,
             nbFollowers: new BN(0),
-            nbFollowees: new BN(0),
+            nbFollowings: new BN(0),
             createdAt: _t2,
           }),
           'registred user2 do not have expected informations',
@@ -189,10 +189,10 @@ describe('Squarrin', function () {
         expect(status4.followingDate).to.be.a.bignumber.equal(new BN(0));
       });
 
-      it('increases nbFollowers and nbFollowees when follow', async function () {
+      it('increases nbFollowers and nbFollowings when follow', async function () {
         let _user1 = await this.squarrin.getUser(user1);
         expect(_user1.nbFollowers).to.be.a.bignumber.equal(new BN(0));
-        expect(_user1.nbFollowees).to.be.a.bignumber.equal(new BN(0));
+        expect(_user1.nbFollowings).to.be.a.bignumber.equal(new BN(0));
         await this.squarrin.follow(user1, user2, { from: admin1 });
         await this.squarrin.follow(user1, user3, { from: admin1 });
         await this.squarrin.follow(user1, user4, { from: admin1 });
@@ -202,13 +202,13 @@ describe('Squarrin', function () {
         const _user3 = await this.squarrin.getUser(user3);
         const _user4 = await this.squarrin.getUser(user4);
         expect(_user1.nbFollowers).to.be.a.bignumber.equal(new BN(0));
-        expect(_user1.nbFollowees).to.be.a.bignumber.equal(new BN(3));
+        expect(_user1.nbFollowings).to.be.a.bignumber.equal(new BN(3));
         expect(_user2.nbFollowers).to.be.a.bignumber.equal(new BN(1));
-        expect(_user2.nbFollowees).to.be.a.bignumber.equal(new BN(1));
+        expect(_user2.nbFollowings).to.be.a.bignumber.equal(new BN(1));
         expect(_user3.nbFollowers).to.be.a.bignumber.equal(new BN(1));
-        expect(_user3.nbFollowees).to.be.a.bignumber.equal(new BN(0));
+        expect(_user3.nbFollowings).to.be.a.bignumber.equal(new BN(0));
         expect(_user4.nbFollowers).to.be.a.bignumber.equal(new BN(2));
-        expect(_user4.nbFollowees).to.be.a.bignumber.equal(new BN(0));
+        expect(_user4.nbFollowings).to.be.a.bignumber.equal(new BN(0));
       });
 
       it('reverts if user1 follows an already followed user2', async function () {
@@ -226,7 +226,7 @@ describe('Squarrin', function () {
         );
       });
 
-      it('reverts if when follow, follower or followee is not registered', async function () {
+      it('reverts if when follow, follower or following is not registered', async function () {
         await expectRevert(this.squarrin.follow(user1, dev, { from: admin1 }), 'Squarrin: User is not registered');
         await expectRevert(this.squarrin.follow(dev, user1, { from: admin1 }), 'Squarrin: User is not registered');
         await expectRevert(this.squarrin.follow(admin1, dev, { from: admin1 }), 'Squarrin: User is not registered');
@@ -266,10 +266,10 @@ describe('Squarrin', function () {
         expect(status4.isFollowing).to.be.false;
       });
 
-      it('decreases nbFollowers and nbFollowees when unfollow', async function () {
+      it('decreases nbFollowers and nbFollowings when unfollow', async function () {
         let _user1 = await this.squarrin.getUser(user1);
         expect(_user1.nbFollowers).to.be.a.bignumber.equal(new BN(0));
-        expect(_user1.nbFollowees).to.be.a.bignumber.equal(new BN(3));
+        expect(_user1.nbFollowings).to.be.a.bignumber.equal(new BN(3));
         await this.squarrin.unfollow(user1, user2, { from: admin1 });
         await this.squarrin.unfollow(user1, user3, { from: admin1 });
         await this.squarrin.unfollow(user2, user3, { from: admin1 });
@@ -278,18 +278,18 @@ describe('Squarrin', function () {
         const _user3 = await this.squarrin.getUser(user3);
         const _user4 = await this.squarrin.getUser(user4);
         expect(_user1.nbFollowers).to.be.a.bignumber.equal(new BN(0));
-        expect(_user1.nbFollowees).to.be.a.bignumber.equal(new BN(1));
+        expect(_user1.nbFollowings).to.be.a.bignumber.equal(new BN(1));
         expect(_user2.nbFollowers).to.be.a.bignumber.equal(new BN(0));
-        expect(_user2.nbFollowees).to.be.a.bignumber.equal(new BN(0));
+        expect(_user2.nbFollowings).to.be.a.bignumber.equal(new BN(0));
         expect(_user3.nbFollowers).to.be.a.bignumber.equal(new BN(0));
-        expect(_user3.nbFollowees).to.be.a.bignumber.equal(new BN(0));
+        expect(_user3.nbFollowings).to.be.a.bignumber.equal(new BN(0));
         expect(_user4.nbFollowers).to.be.a.bignumber.equal(new BN(1));
-        expect(_user4.nbFollowees).to.be.a.bignumber.equal(new BN(0));
+        expect(_user4.nbFollowings).to.be.a.bignumber.equal(new BN(0));
       });
 
       it('reverts if user1 unfollows an already unfollowed user2', async function () {
         await this.squarrin.unfollow(user1, user2, { from: admin1 });
-        await expectRevert(this.squarrin.unfollow(user1, user2, { from: admin1 }), 'Squarrin: Only unfollow followee');
+        await expectRevert(this.squarrin.unfollow(user1, user2, { from: admin1 }), 'Squarrin: Only unfollow following');
       });
 
       it('reverts if unfollow is not called by admin', async function () {
@@ -299,7 +299,7 @@ describe('Squarrin', function () {
         );
       });
 
-      it('reverts if when unfollow, follower or followee is not registered', async function () {
+      it('reverts if when unfollow, follower or following is not registered', async function () {
         await expectRevert(this.squarrin.unfollow(user1, dev, { from: admin1 }), 'Squarrin: User is not registered');
         await expectRevert(this.squarrin.unfollow(dev, user1, { from: admin1 }), 'Squarrin: User is not registered');
         await expectRevert(this.squarrin.unfollow(admin1, dev, { from: admin1 }), 'Squarrin: User is not registered');
