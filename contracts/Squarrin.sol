@@ -12,6 +12,8 @@ contract Squarrin {
         uint256 createdAt;
     }
 
+    // TODO: REMOVE this, use only boolean instead and don't use followingDate
+    // TODO: need to change the test.
     struct FollowStatus {
         bool isFollowing;
         uint256 followingDate;
@@ -38,7 +40,8 @@ contract Squarrin {
     mapping(uint256 => Product) private _products;
     mapping(address => mapping(uint256 => bool)) private _productOwned;
     mapping(uint256 => mapping(address => bool)) private _productOwners;
-    mapping(address => mapping(address => uint256)) private _rewards;
+    mapping(address => mapping(address => uint256)) private _rewardsDate;
+    mapping(address => uint256) private _rewards;
 
     modifier onlyAdmin() {
         require(_admins[msg.sender], "Squarrin: Only administrators can do this");
@@ -66,7 +69,31 @@ contract Squarrin {
         _;
     }
 
+    modifier onlyForEnoughProduct(uint256 productId) {
+        require(_products[productId].quantity > 0, "Squarrin: Not enough quantity");
+        _;
+    }
+
+    modifier onlyFollower(address follower, address following) {
+        require(_followers[follower][following].isFollowing, "Squarrin: Only follower can do this");
+        _;
+    }
+
+    modifier onlyMonthFollower(address follower, address following) {
+        require(_followers[follower][following].isFollowing, "Squarrin: Only follower can do this");
+        require(
+            block.timestamp - _followers[follower][following].followingDate >= _minFollowingTimeForReward,
+            "Squarrin: Not enough following time"
+        );
+        _;
+    }
+
+    modifier onlyMonthlyReward(address follower, address following) {
+        require(_)
+    }
+
     // TESTED
+    // TODO: ADD following time for reward as parameter
     constructor(address admin, uint8 percentage) onlyValidPercentage(percentage) {
         _minFollowingTimeForReward = 4 weeks;
         _lastProductId = 0;
@@ -165,15 +192,6 @@ contract Squarrin {
         _followers[follower][following] = FollowStatus(false, 0);
     }
 
-    /*
-        ProductType productType;
-        address seller;
-        uint256 price;
-        uint256 quantity;
-        bytes32 urlHash;
-        bool isActive;
-        uint256 createdAt;
-    */
     function sell(
         address seller,
         ProductType productType,
@@ -181,7 +199,7 @@ contract Squarrin {
         uint256 quantity,
         bool isFinite,
         bytes32 urlHash
-    ) public onlyAdmin onlyForRegisteredUser(seller) returns (bool) {
+    ) public onlyAdmin onlyForRegisteredUser(seller) returns (uint256) {
         if (productType == ProductType.Real && !isFinite) {
             revert("Squarrin: Real product must have a finite supply");
         }
@@ -191,7 +209,7 @@ contract Squarrin {
         Product memory product = Product(productType, seller, price, quantity, urlHash, true, block.timestamp);
         _lastProductId += 1;
         _products[_lastProductId] = product;
-        return true;
+        return _lastProductId;
     }
 
     function stopSell(uint256 productId) public onlyAdmin onlyForActiveSell(productId) returns (bool) {
@@ -199,24 +217,59 @@ contract Squarrin {
         return true;
     }
 
-    function product(uint256 productId) public view returns (Product memory) {
+    function getProduct(uint256 productId) public view returns (Product memory) {
         return _products[productId];
     }
 
-    /*
-    function getProduct(uint256 id) public view returns (Product memory) {
-        return _products[id];
+    // mapping(address => mapping(uint256 => bool)) private _productOwned;
+    // mapping(uint256 => mapping(address => bool)) private _productOwners;
+    function buy(
+        address buyer,
+        uint256 productId,
+        uint256 quantity
+    )
+        public
+        onlyAdmin
+        onlyForRegisteredUser(buyer)
+        onlyForActiveSell(productId)
+        onlyForEnoughProduct(productId)
+        returns (bool)
+    {
+        uint256 price = _products[productId].price * quantity;
+        require(_quadreum.balanceOf(buyer) >= price);
+        uint256 reward = (price * _rewardPercentage) / 100;
+        _rewards[_products[productId].seller] = reward;
+        uint256 buyerEarning = price - reward;
+        _productOwned[buyer][productId] = true;
+        _productOwners[productId][buyer] = true;
+        _products[productId].quantity -= 1;
+        _quadreum.operatorSend(buyer, _products[productId].seller, buyerEarning, "", ""); // send 95% to buyer
+        _quadreum.operatorSend(buyer, address(this), reward, "", ""); // send 5% to smart contract
+        return true;
     }
-    */
 
-    //function sell()
-    //function stopSell()
+    function withdrawReward(address follower, address following)
+        public
+        onlyAdmin
+        onlyMonthFollower(follower, following)
+        returns (bool)
+    {
+        uint256 rewardAmount = _rewards[following] / _users[following].nbFollowers;
+        _rewards[following] -= rewardAmount;
+        _quadreum.operatorSend(address(this), follower, rewardAmount, "", "");
+        return true;
+    }
+
+    // surement faire un _buy() pour generaliser la fonction achat
+    // function offerProduct()
+    // function tips()
     //function deleteProduct()
-    //function buy(){
-    // apply the reward when a sell is made
-    //}
-    //function withdrawReward()
-    // reward things
+
+    // TODO: store ether in smart contract with a fixed price ??
+    function cashOut(address user) public onlyAdmin returns(bool) { 
+        return true;
+    }
+
 }
 
 // TODO
@@ -247,94 +300,4 @@ contract Squarrin {
     }
 
 
-    function buy(uint256 id) public {
-        // get price
-        // Decrease nb quantity
-        // transferFrom
-    }
-
 }
-
-
-
-import "../GSN/Context.sol";
-import "../math/SafeMath.sol";
-contract PaymentSplitter is Context {
-    using SafeMath for uint256;
-
-    event PayeeAdded(address account, uint256 shares);
-    event PaymentReleased(address to, uint256 amount);
-    event PaymentReceived(address from, uint256 amount);
-
-    uint256 private _totalShares;
-    uint256 private _totalReleased;
-
-    mapping(address => uint256) private _shares;
-    mapping(address => uint256) private _released;
-    address[] private _payees;
-
-    constructor (address[] memory payees, uint256[] memory shares) public payable {
-        // solhint-disable-next-line max-line-length
-        require(payees.length == shares.length, "PaymentSplitter: payees and shares length mismatch");
-        require(payees.length > 0, "PaymentSplitter: no payees");
-
-        for (uint256 i = 0; i < payees.length; i++) {
-            _addPayee(payees[i], shares[i]);
-        }
-    }
-    receive () external payable virtual {
-        emit PaymentReceived(_msgSender(), msg.value);
-    }
-
-
-    function totalShares() public view returns (uint256) {
-        return _totalShares;
-    }
-
-
-    function totalReleased() public view returns (uint256) {
-        return _totalReleased;
-    }
-
-
-    function shares(address account) public view returns (uint256) {
-        return _shares[account];
-    }
-
-
-    function released(address account) public view returns (uint256) {
-        return _released[account];
-    }
-
-    function payee(uint256 index) public view returns (address) {
-        return _payees[index];
-    }
-
-
-    function release(address payable account) public virtual {
-        require(_shares[account] > 0, "PaymentSplitter: account has no shares");
-
-        uint256 totalReceived = address(this).balance.add(_totalReleased);
-        uint256 payment = totalReceived.mul(_shares[account]).div(_totalShares).sub(_released[account]);
-
-        require(payment != 0, "PaymentSplitter: account is not due payment");
-
-        _released[account] = _released[account].add(payment);
-        _totalReleased = _totalReleased.add(payment);
-
-        account.transfer(payment);
-        emit PaymentReleased(account, payment);
-    }
-
-    function _addPayee(address account, uint256 shares_) private {
-        require(account != address(0), "PaymentSplitter: account is the zero address");
-        require(shares_ > 0, "PaymentSplitter: shares are 0");
-        require(_shares[account] == 0, "PaymentSplitter: account already has shares");
-
-        _payees.push(account);
-        _shares[account] = shares_;
-        _totalShares = _totalShares.add(shares_);
-        emit PayeeAdded(account, shares_);
-    }
-}
-*/

@@ -305,6 +305,7 @@ describe('Squarrin', function () {
         await expectRevert(this.squarrin.unfollow(admin1, dev, { from: admin1 }), 'Squarrin: User is not registered');
       });
     });
-    context('Squarrin products', async function () {});
+    context('Squarrin sell/buy system', async function () {});
+    context('Squarrin reward system', async function () {});
   });
 });
